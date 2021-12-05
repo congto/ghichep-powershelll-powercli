@@ -3,8 +3,8 @@
 # Modify: CongTO
 $StartTime = Get-Date
 
-$Telegramtoken = "1117214915:AAF4LFh6uChng056_oTyM6cz9TY4dyAn3YU"
-$Telegramchatid = "717154123"
+$Telegramtoken = "1117214915:AAF4LFhsdfsdyM6cz9TY4dyAn3YU"
+$Telegramchatid = "717fsdf23"
 
 Function Send-Telegram {
 Param([Parameter(Mandatory=$true)][String]$Message)
