@@ -102,10 +102,10 @@ foreach ($i in 41..44){
     $vm | New-AdvancedSetting -Name "ethernet3.filter4.onFailure" -value "failOpen" -confirm:$false -ErrorAction SilentlyContinue | Out-File -Append -LiteralPath $verboseLogFile
     
     My-Logger "Updating vCPU & vMEM $vmname"
-    Set-VM -Server $viConnection -VM $vm -NumCpu 4 -MemoryGB 24 -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
+    Set-VM -Server $viConnection -VM $vm -NumCpu 8 -MemoryGB 16 -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
 
     My-Logger "Updating vSAN Cache & Capacity $vmname"
-    Get-HardDisk -Server $viConnection -VM $vm -Name "Hard disk 2" | Set-HardDisk -CapacityGB 50 -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
+    Get-HardDisk -Server $viConnection -VM $vm -Name "Hard disk 2" | Set-HardDisk -CapacityGB 30 -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
     Get-HardDisk -Server $viConnection -VM $vm -Name "Hard disk 3" | Set-HardDisk -CapacityGB 300 -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
     
     $NowTime = Get-Date
@@ -124,7 +124,7 @@ My-Logger "Bat dau vao luc: $StartTime"
 My-Logger "Ket thuc vao luc: $EndTime"
 My-Logger "Tong thoi gian tao: $duration minutes"
 
-Send-Telegram -Message "Da ket thuc luc $EndTime, Tong thoi gian: $duration minutes" 
+# Send-Telegram -Message "Da ket thuc luc $EndTime, Tong thoi gian: $duration minutes" 
 
 
 Read-Host -Prompt "An ENTER de thoat"
