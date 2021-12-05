@@ -34,7 +34,7 @@ $VIPassword = "Homelab@2020"
 # General Deployment Configuration for Nested ESXi, VCSA & NSX VMs
 $VMDatacenter = "HCD-DC01"
 $VMCluster = "HCD-Cluster02"
-$VMNetwork = "dvpg-vlan-21"
+$VMNetwork = "dvpg-vlan-21-mgmt"
 $VMDatastore = "datastore2-r620"
 $VMNetmask = "255.255.255.0"
 $VMGateway = "192.168.21.1"
@@ -50,7 +50,7 @@ $VMVMFS = "false"
 
 # VCSA Deployment Configuration
 $VCSADeploymentSize = "tiny"
-$VCSADisplayName = "vcsa"
+$VCSADisplayName = "tanzu-vcsa-30"
 $VCSAIPAddress = "192.168.21.30"
 $VCSAHostname = "vcsa.hcdvra.local" #Change to IP if you don't have valid DNS
 $VCSAPrefix = "24"
