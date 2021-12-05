@@ -35,21 +35,21 @@ $vcname = "vc.hcdlab.local"
 $vcuser = "administrator@vsphere.local"
 $vcpass = "Homelab@2020"
 
-$ovffile = "C:\Nested\Nested_ESXi7.0u2a_Appliance_Template_v1.ovf"
+$ovffile = "C:\Nested\Nested_ESXi7.0u2a_Appliance_Template_v2.ovf"
 
 $cluster = "HCD-Cluster02"
 $Trunk_Network = "dvpg-nested-trunk"
 $datastore = "datastore3-r620"
-$iprange = "192.168.20"
+$iprange = "192.168.21"
 $netmask = "255.255.255.0"
-$gateway = "192.168.20.1"
-$dns = "192.168.20.5"
-$dnsdomain = "nsxtlab.local"
-$ntp = "192.168.20.212"
-$syslog = "192.168.20.212"
+$gateway = "192.168.21.1"
+$dns = "192.168.21.2"
+$dnsdomain = "hcdvra.local"
+$ntp = "192.168.21.3"
+$syslog = "192.168.21.3"
 $password = "VMware1!"
 $ssh = "True"
-$network_name = "dvpg-vlan-20"
+$network_name = "dvpg-vlan-21-mgmt"
 
 #### DO NOT EDIT BEYOND HERE ####
 
@@ -63,7 +63,7 @@ $vmhost_ref = $cluster_ref | Get-VMHost | Select -First 1
 $ovfconfig = Get-OvfConfiguration $ovffile
 
 
-foreach ($i in 81..85){
+foreach ($i in 41..44){
     $ipaddress = "$iprange.$i"
     # Try to perform DNS lookup
     try {
@@ -71,10 +71,10 @@ foreach ($i in 81..85){
     }
     Catch [system.exception]
     {
-        $vmname = "vesxi-$i"
+        $vmname = "tanzu-esxi-$i"
     }
     $ovfconfig.NetworkMapping.VM_Network.value = $network_name
-	$ovfconfig.common.guestinfo.hostname.value = $vmname
+	  $ovfconfig.common.guestinfo.hostname.value = $vmname
     $ovfconfig.common.guestinfo.ipaddress.value = $ipaddress
     $ovfconfig.common.guestinfo.netmask.value = $netmask
     $ovfconfig.common.guestinfo.gateway.value = $gateway
@@ -87,7 +87,7 @@ foreach ($i in 81..85){
 
     # Deploy the OVF/OVA with the config parameters
     My-Logger "Deploying $vmname ..."
-	Send-Telegram -Message "Bat dau tao: $vmname"
+	  # Send-Telegram -Message "Bat dau tao: $vmname"
     
     $vm = Import-VApp -Source $ovffile -OvfConfiguration $ovfconfig -Name $vmname -Location $cluster -VMHost $vmhost_ref -Datastore $datastore -DiskStorageFormat thin
     
@@ -109,7 +109,7 @@ foreach ($i in 81..85){
     Get-HardDisk -Server $viConnection -VM $vm -Name "Hard disk 3" | Set-HardDisk -CapacityGB 300 -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
     
     $NowTime = Get-Date
-    Send-Telegram -Message "Da tao xong $vmname vao luc $NowTime"
+    # Send-Telegram -Message "Da tao xong $vmname vao luc $NowTime"
   
 	  # $vm | Start-Vm -RunAsync | Out-Null
 	
