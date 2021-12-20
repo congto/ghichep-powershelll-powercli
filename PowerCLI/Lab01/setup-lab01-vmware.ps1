@@ -1,15 +1,15 @@
 # Author: William Lam
 # Website: www.williamlam.com
+# Modify: CongTO
 
 # vCenter Server used to deploy vSphere with Kubernetes Lab
-$VIServer = "vc.hcdlab.local"
+$VIServer = "Thay_doi_URL_vCenter"
 $VIUsername = "administrator@vsphere.local"
-$VIPassword = "Homelab@2020"
+$VIPassword = "Thay_doi_pass"
 
-# Full Path to both the Nested ESXi 7.0 VA, Extracted VCSA 7.0 ISO & HA Proxy OVAs
+# Full Path to both the Nested ESXi 7.0 VA, Extracted VCSA 7.0 ISO
 $NestedESXiApplianceOVA = "C:\Nested\Nested_ESXi7.0u1d_Appliance_Template_v1.ova"
 $VCSAInstallerPath = "C:\VCFLAB\Tools\VMware-VCSA-all-7.0.1-17956102"
-$HAProxyOVA = "C:\Users\tanzu\Desktop\tanzu\vmware-haproxy-v0.1.8.ova"
 
 # TKG Content Library URL
 $TKGContentLibraryName = "TKG-Content-Library"
@@ -40,23 +40,12 @@ $VCSASSOPassword = "VMware1!"
 $VCSARootPassword = "VMware1!"
 $VCSASSHEnable = "true"
 
-# HA Proxy Configuration
-$HAProxyDisplayName = "tanzu-haproxy-1"
-$HAProxyManagementIPAddress = "172.17.31.116/24" # Format is IP Address/CIDR Prefix
-$HAProxyHostname = "tanzu-haproxy-1.cpbu.corp"
-$HAProxyPort = "5556"
-$HAProxyWorkloadIPAddress = "172.17.36.128/24" # Format is IP Address/CIDR Prefix
-$HAProxyWorkloadGateway = "172.17.36.1"
-$HAProxyWorkloadNetworkIPRange = "172.17.36.0/25" # Format is Network CIDR Notation
-$HAProxyWorkloadNetwork = "dvpg-nested-trunk"
-$HAProxyOSPassword = "VMware1!"
-$HAProxyUsername = "wcp"
-$HAProxyPassword = "VMware1!"
 
 # General Deployment Configuration for Nested ESXi, VCSA & NSX VMs
 $VMDatacenter = "HCD-DC01"
 $VMCluster = "HCD-Cluster02"
 $VMNetwork = "dvpg-vlan-21-mgmt"
+$Trunking_network = "dvpg-nested-trunk"
 $VMDatastore = "datastore3-r620"
 $VMNetmask = "255.255.255.0"
 $VMGateway = "192.168.21.1"
@@ -79,13 +68,6 @@ $NewVCWorkloadPortgroupName = "DVPG-Workload-Network"
 $NewVCWorkloadPortgroupNameVlan="21"
 $NewVCMgmtPortgroupNameVlan="31"
 
-# Tanzu Configuration
-$StoragePolicyName = "tanzu-gold-storage-policy"
-$StoragePolicyTagCategory = "tanzu-demo-tag-category"
-$StoragePolicyTagName = "tanzu-demo-storage"
-$DevOpsUsername = "devops"
-$DevOpsPassword = "VMware1!"
-
 # Advanced Configurations
 # Set to 1 only if you have DNS (forward/reverse) for ESXi hostnames
 $addHostByDnsName = 1
@@ -99,7 +81,6 @@ $VAppName = "Nested-Tanzu-Basic-Lab-$random_string"
 
 $preCheck = 1
 $confirmDeployment = 1
-$deployHAProxy = 0
 $deployNestedESXiVMs = 1
 $deployVCSA = 1
 $setupNewVC = 1
@@ -108,7 +89,6 @@ $configureVSANDiskGroup = 1
 $configureVDS = 1
 $clearVSANHealthCheckAlarm = 1
 $setupPacificStoragePolicy = 0
-$setupPacific = 1
 $moveVMsIntovApp = 1
 
 $vcsaSize2MemoryStorageMap = @{
@@ -243,8 +223,6 @@ if($confirmDeployment -eq 1) {
     Write-Host -ForegroundColor White $NestedESXiApplianceOVA
     Write-Host -NoNewline -ForegroundColor Green "VCSA Image Path: "
     Write-Host -ForegroundColor White $VCSAInstallerPath
-    Write-Host -NoNewline -ForegroundColor Green "HA Proxy Image Path: "
-    Write-Host -ForegroundColor White $HAProxyOVA
 
     Write-Host -ForegroundColor Yellow "`n---- vCenter Server Deployment Target Configuration ----"
     Write-Host -NoNewline -ForegroundColor Green "vCenter Server Address: "
@@ -303,16 +281,6 @@ if($confirmDeployment -eq 1) {
     Write-Host -NoNewline -ForegroundColor Green "Gateway: "
     Write-Host -ForegroundColor White $VMGateway
 
-    Write-Host -ForegroundColor Yellow "`n---- HA Proxy Configuration ----"
-    Write-Host -NoNewline -ForegroundColor Green "Hostname: "
-    Write-Host -ForegroundColor White $HAProxyHostname
-    Write-Host -NoNewline -ForegroundColor Green "Combined Load balancer + Workload Network: "
-    Write-Host -ForegroundColor White $HAProxyWorkloadNetwork
-    Write-Host -NoNewline -ForegroundColor Green "Management IP Address: "
-    Write-Host -ForegroundColor White $HAProxyManagementIPAddress
-    Write-Host -NoNewline -ForegroundColor Green "Workload IP Address: "
-    Write-Host -ForegroundColor White $HAProxyWorkloadIPAddress
-
     $esxiTotalCPU = $NestedESXiHostnameToIPs.count * [int]$NestedESXivCPU
     $esxiTotalMemory = $NestedESXiHostnameToIPs.count * [int]$NestedESXivMEM
     $esxiTotalStorage = ($NestedESXiHostnameToIPs.count * [int]$NestedESXiCachingvDisk) + ($NestedESXiHostnameToIPs.count * [int]$NestedESXiCapacityvDisk)
@@ -350,7 +318,7 @@ if($confirmDeployment -eq 1) {
     Clear-Host
 }
 
-if( $deployNestedESXiVMs -eq 1 -or $deployVCSA -eq 1 -or $deployHAProxy -eq 1) {
+if( $deployNestedESXiVMs -eq 1 -or $deployVCSA -eq 1) {
     My-Logger "Connecting to Management vCenter Server $VIServer ..."
     $viConnection = Connect-VIServer $VIServer -User $VIUsername -Password $VIPassword -WarningAction SilentlyContinue
 
@@ -388,9 +356,9 @@ if($deployNestedESXiVMs -eq 1) {
         My-Logger "Deploying Nested ESXi VM $VMName ..."
         $vm = Import-VApp -Source $NestedESXiApplianceOVA -OvfConfiguration $ovfconfig -Name $VMName -Location $cluster -VMHost $vmhost -Datastore $datastore -DiskStorageFormat thin
 
-        My-Logger "Adding vmnic2/vmnic3 for `"$HAProxyWorkloadNetwork`" to passthrough to Nested ESXi VMs ..."
-        New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $HAProxyWorkloadNetwork -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
-        New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $HAProxyWorkloadNetwork -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
+        My-Logger "Adding vmnic2/vmnic3 for `"$Trunking_network`" to passthrough to Nested ESXi VMs ..."
+        New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $Trunking_network -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
+        New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $Trunking_network -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
 
         $vm | New-AdvancedSetting -name "ethernet2.filter4.name" -value "dvfilter-maclearn" -confirm:$false -ErrorAction SilentlyContinue | Out-File -Append -LiteralPath $verboseLogFile
         $vm | New-AdvancedSetting -Name "ethernet2.filter4.onFailure" -value "failOpen" -confirm:$false -ErrorAction SilentlyContinue | Out-File -Append -LiteralPath $verboseLogFile
@@ -410,30 +378,6 @@ if($deployNestedESXiVMs -eq 1) {
     }
 }
 
-if($deployHAProxy -eq 1) {
-    $ovfconfig = Get-OvfConfiguration $HAProxyOVA
-
-    $ovfconfig.NetworkMapping.Management.value = $VMNetwork
-    $ovfconfig.NetworkMapping.Workload.value = $HAProxyWorkloadNetwork
-    $ovfconfig.DeploymentOption.value = "default"
-    $ovfconfig.appliance.root_pwd.value = $HAProxyOSPassword
-    $ovfconfig.network.hostname.value = $HAProxyHostname
-    $ovfconfig.network.nameservers.value = $VMDNS
-    $ovfconfig.network.management_ip.value = $HAProxyManagementIPAddress
-    $ovfconfig.network.management_gateway.value = $VMGateway
-    $ovfconfig.network.workload_ip.value = $HAProxyWorkloadIPAddress
-    $ovfconfig.network.workload_gateway.value = $HAProxyWorkloadGateway
-    $ovfconfig.loadbalance.service_ip_range.value = $HAProxyWorkloadNetworkIPRange
-    $ovfconfig.loadbalance.dataplane_port.value = $HAProxyPort
-    $ovfconfig.loadbalance.haproxy_user.value = $HAProxyUsername
-    $ovfconfig.loadbalance.haproxy_pwd.value = $HAProxyPassword
-
-    My-Logger "Deploying HA Proxy VM $HAProxyDisplayName ..."
-    $vm = Import-VApp -Source $HAProxyOVA -OvfConfiguration $ovfconfig -Name $HAProxyDisplayName -Location $cluster -VMHost $vmhost -Datastore $datastore -DiskStorageFormat thin
-
-    My-Logger "Powering On $HAProxyDisplayName ..."
-    $vm | Start-Vm -RunAsync | Out-Null
-}
 
 if($deployVCSA -eq 1) {
         if($IsWindows) {
@@ -513,17 +457,11 @@ if($moveVMsIntovApp -eq 1) {
         Move-VM -VM $vcsaVM -Server $viConnection -Destination $VApp -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
     }
 
-    if($deployHAProxy -eq 1) {
-        $haProxyVM = Get-VM -Name $HAProxyDisplayName -Server $viConnection
-        My-Logger "Moving $HAProxyDisplayName into $VAppName vApp ..."
-        Move-VM -VM $haProxyVM -Server $viConnection -Destination $VApp -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
-    }
-
     My-Logger "Moving $VAppName to VM Folder $VMFolder ..."
     Move-VApp -Server $viConnection $VAppName -Destination (Get-Folder -Server $viConnection $VMFolder) | Out-File -Append -LiteralPath $verboseLogFile
 }
 
-if( $deployNestedESXiVMs -eq 1 -or $deployVCSA -eq 1 -or $deployHAProxy -eq 1) {
+if( $deployNestedESXiVMs -eq 1 -or $deployVCSA -eq 1) {
     My-Logger "Disconnecting from $VIServer ..."
     Disconnect-VIServer -Server $viConnection -Confirm:$false
 }
@@ -603,13 +541,13 @@ if($setupNewVC -eq 1) {
         My-Logger "Creating VDS Management Network Portgroup"
         New-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName -Vds $vds | Out-File -Append -LiteralPath $verboseLogFile
         Get-VDPortgroup -Server $vc $NewVCMgmtPortgroupName | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy -ActiveUplinkPort @("dvUplink1") -UnusedUplinkPort @("dvUplink2") | Out-File -Append -LiteralPath $verboseLogFile
-        Get-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName | Set-VDVlanConfiguration -VlanId $NewVCMgmtPortgroupNameVlan
+        Get-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName | Set-VDVlanConfiguration -VlanId $NewVCMgmtPortgroupNameVlan | Out-File -Append -LiteralPath $verboseLogFile
 
 
         My-Logger "Creating VDS Supervisor Cluster Workload Network Portgroup"
         New-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName -Vds $vds | Out-File -Append -LiteralPath $verboseLogFile
         Get-VDPortgroup -Server $vc $NewVCWorkloadPortgroupName | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy -ActiveUplinkPort @("dvUplink2") -UnusedUplinkPort @("dvUplink1") | Out-File -Append -LiteralPath $verboseLogFile
-        Get-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName | Set-VDVlanConfiguration -VlanId $NewVCWorkloadPortgroupNameVlan
+        Get-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName | Set-VDVlanConfiguration -VlanId $NewVCWorkloadPortgroupNameVlan | Out-File -Append -LiteralPath $verboseLogFile
 
 
         foreach ($vmhost in Get-Cluster -Server $vc | Get-VMHost) {
@@ -659,30 +597,6 @@ if($setupNewVC -eq 1) {
 
     My-Logger "Disconnecting from new VCSA ..."
     Disconnect-VIServer $vc -Confirm:$false
-}
-
-if($setupPacific -eq 1) {
-    My-Logger "Connecting to Management vCenter Server $VIServer for enabling Tanzu ..."
-    Connect-VIServer $VIServer -User $VIUsername -Password $VIPassword -WarningAction SilentlyContinue | Out-Null
-
-    My-Logger "Creating local $DevOpsUsername User in vCenter Server ..."
-    $devopsUserCreationCmd = "/usr/lib/vmware-vmafd/bin/dir-cli user create --account $DevOpsUsername --first-name `"Dev`" --last-name `"Ops`" --user-password `'$DevOpsPassword`' --login `'administrator@$VCSASSODomainName`' --password `'$VCSASSOPassword`'"
-    Invoke-VMScript -ScriptText $devopsUserCreationCmd -vm (Get-VM -Name $VCSADisplayName) -GuestUser "root" -GuestPassword "$VCSARootPassword" | Out-File -Append -LiteralPath $verboseLogFile
-
-    My-Logger "Disconnecting from Management vCenter ..."
-    Disconnect-VIServer * -Confirm:$false | Out-Null
-
-    $vc = Connect-VIServer $VCSAIPAddress -User "administrator@$VCSASSODomainName" -Password $VCSASSOPassword -WarningAction SilentlyContinue
-
-    My-Logger "Creating TKG Subscribed Content Library $TKGContentLibraryName ..."
-    $clScheme = ([System.Uri]$TKGContentLibraryURL).scheme
-    $clHost = ([System.Uri]$TKGContentLibraryURL).host
-    $clPort = ([System.Uri]$TKGContentLibraryURL).port
-    $clThumbprint = Get-SSLThumbprint -Url "${clScheme}://${clHost}:${clPort}"
-
-    New-ContentLibrary -Server $vc -Name $TKGContentLibraryName -Description "Subscribed TKG Content Library" -Datastore (Get-Datastore -Server $vc "vsanDatastore") -AutomaticSync -SubscriptionUrl $TKGContentLibraryURL -SslThumbprint $clThumbprint | Out-File -Append -LiteralPath $verboseLogFile
-
-    Disconnect-VIServer $vc -Confirm:$false | Out-Null
 }
 
 $EndTime = Get-Date
