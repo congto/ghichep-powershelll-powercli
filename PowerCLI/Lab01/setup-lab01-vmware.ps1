@@ -65,8 +65,8 @@ $NewVCVSANClusterName = "Workload-Cluster"
 $NewVCVDSName = "Tanzu-VDS"
 $NewVCMgmtPortgroupName = "DVPG-Supervisor-Management-Network"
 $NewVCWorkloadPortgroupName = "DVPG-Workload-Network"
-$NewVCWorkloadPortgroupNameVlan="21"
-$NewVCMgmtPortgroupNameVlan="31"
+$NewVCWorkloadPortgroupNameVlan="31"
+$NewVCMgmtPortgroupNameVlan="21"
 
 # Advanced Configurations
 # Set to 1 only if you have DNS (forward/reverse) for ESXi hostnames
