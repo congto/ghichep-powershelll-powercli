@@ -20,6 +20,7 @@ $NestedESXiHostnameToIPs = @{
     "tanzu-esxi-61" = "192.168.21.61"
     "tanzu-esxi-62" = "192.168.21.62"
     "tanzu-esxi-63" = "192.168.21.63"
+    "tanzu-esxi-64" = "192.168.21.64"    
 }
 
 # Nested ESXi VM Resources
@@ -75,6 +76,8 @@ $NewVCVSANClusterName = "Workload-Cluster"
 $NewVCVDSName = "Tanzu-VDS"
 $NewVCMgmtPortgroupName = "DVPG-Supervisor-Management-Network"
 $NewVCWorkloadPortgroupName = "DVPG-Workload-Network"
+$NewVCWorkloadPortgroupNameVlan="21"
+$NewVCMgmtPortgroupNameVlan="31"
 
 # Tanzu Configuration
 $StoragePolicyName = "tanzu-gold-storage-policy"
@@ -385,8 +388,8 @@ if($deployNestedESXiVMs -eq 1) {
         My-Logger "Deploying Nested ESXi VM $VMName ..."
         $vm = Import-VApp -Source $NestedESXiApplianceOVA -OvfConfiguration $ovfconfig -Name $VMName -Location $cluster -VMHost $vmhost -Datastore $datastore -DiskStorageFormat thin
 
-        My-Logger "Adding vmnic2/vmnic3 for `"$VMNetwork`" and `"$HAProxyWorkloadNetwork`" to passthrough to Nested ESXi VMs ..."
-        New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $VMNetwork -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
+        My-Logger "Adding vmnic2/vmnic3 for `"$HAProxyWorkloadNetwork`" to passthrough to Nested ESXi VMs ..."
+        New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $HAProxyWorkloadNetwork -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
         New-NetworkAdapter -VM $vm -Type Vmxnet3 -NetworkName $HAProxyWorkloadNetwork -StartConnected -confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
 
         $vm | New-AdvancedSetting -name "ethernet2.filter4.name" -value "dvfilter-maclearn" -confirm:$false -ErrorAction SilentlyContinue | Out-File -Append -LiteralPath $verboseLogFile
@@ -600,13 +603,13 @@ if($setupNewVC -eq 1) {
         My-Logger "Creating VDS Management Network Portgroup"
         New-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName -Vds $vds | Out-File -Append -LiteralPath $verboseLogFile
         Get-VDPortgroup -Server $vc $NewVCMgmtPortgroupName | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy -ActiveUplinkPort @("dvUplink1") -UnusedUplinkPort @("dvUplink2") | Out-File -Append -LiteralPath $verboseLogFile
-        Get-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName | Set-VDVlanConfiguration -VlanId 21
+        Get-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName | Set-VDVlanConfiguration -VlanId $NewVCMgmtPortgroupNameVlan
 
 
         My-Logger "Creating VDS Supervisor Cluster Workload Network Portgroup"
         New-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName -Vds $vds | Out-File -Append -LiteralPath $verboseLogFile
         Get-VDPortgroup -Server $vc $NewVCWorkloadPortgroupName | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy -ActiveUplinkPort @("dvUplink2") -UnusedUplinkPort @("dvUplink1") | Out-File -Append -LiteralPath $verboseLogFile
-        Get-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName | Set-VDVlanConfiguration -VlanId 31
+        Get-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName | Set-VDVlanConfiguration -VlanId $NewVCWorkloadPortgroupNameVlan
 
 
         foreach ($vmhost in Get-Cluster -Server $vc | Get-VMHost) {
