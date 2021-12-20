@@ -105,7 +105,7 @@ $configureVSANDiskGroup = 1
 $configureVDS = 1
 $clearVSANHealthCheckAlarm = 1
 $setupPacificStoragePolicy = 0
-$setupPacific = 0
+$setupPacific = 1
 $moveVMsIntovApp = 1
 
 $vcsaSize2MemoryStorageMap = @{
@@ -600,10 +600,14 @@ if($setupNewVC -eq 1) {
         My-Logger "Creating VDS Management Network Portgroup"
         New-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName -Vds $vds | Out-File -Append -LiteralPath $verboseLogFile
         Get-VDPortgroup -Server $vc $NewVCMgmtPortgroupName | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy -ActiveUplinkPort @("dvUplink1") -UnusedUplinkPort @("dvUplink2") | Out-File -Append -LiteralPath $verboseLogFile
+        Get-VDPortgroup -Server $vc -Name $NewVCMgmtPortgroupName | Set-VDVlanConfiguration -VlanId 21
 
-        My-Logger "Creating VDS Supervisor Cluster Management Network Portgroup"
+
+        My-Logger "Creating VDS Supervisor Cluster Workload Network Portgroup"
         New-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName -Vds $vds | Out-File -Append -LiteralPath $verboseLogFile
         Get-VDPortgroup -Server $vc $NewVCWorkloadPortgroupName | Get-VDUplinkTeamingPolicy | Set-VDUplinkTeamingPolicy -ActiveUplinkPort @("dvUplink2") -UnusedUplinkPort @("dvUplink1") | Out-File -Append -LiteralPath $verboseLogFile
+        Get-VDPortgroup -Server $vc -Name $NewVCWorkloadPortgroupName | Set-VDVlanConfiguration -VlanId 31
+
 
         foreach ($vmhost in Get-Cluster -Server $vc | Get-VMHost) {
             My-Logger "Adding $vmhost to $NewVCVDSName"
